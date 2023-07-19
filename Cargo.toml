@@ -1,0 +1,13 @@
+[package]
+name = "git"
+version = "0.1.0"
+authors = ["Jatinderjit Singh <jatinderjit89@gmail.com>"]
+edition = "2021"
+description = "Yet another Git implementation"
+license = "MIT"
+keywords = ["git", "rust"]
+categories = ["command-line-utilities"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]

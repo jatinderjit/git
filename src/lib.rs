@@ -1,14 +1,13 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use anyhow::{Ok, Result};
+use cli::Cli;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub(crate) mod cli;
+pub(crate) mod commands;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub fn run() -> Result<()> {
+    let cli = cli::parse();
+    match cli {
+        Cli::Init(options) => commands::init(options)?,
+    };
+    Ok(())
 }

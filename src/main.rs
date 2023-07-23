@@ -1,5 +1,6 @@
-use git::add;
+use anyhow::Result;
+use git;
 
-fn main() {
-    println!("{}", add(1, 2));
+fn main() -> Result<()> {
+    git::run()
 }

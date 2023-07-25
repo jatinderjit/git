@@ -1,22 +1,15 @@
-use clap::{Args, Parser};
+use clap::Parser;
 
-const DEFAULT_BRANCH: &str = "main";
+use crate::commands::{CatFileCliOptions, InitOptions};
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
-pub enum Cli {
-    Init(Init),
+pub(crate) enum Cli {
+    Init(InitOptions),
+    CatFile(CatFileCliOptions),
 }
 
-#[derive(Args, Debug)]
-pub struct Init {
-    pub path: Option<String>,
-
-    #[arg(short = 'b', long, name = "branch-name", default_value = DEFAULT_BRANCH)]
-    pub initial_branch: String,
-}
-
-pub fn parse() -> Cli {
+pub(crate) fn parse() -> Cli {
     Cli::parse()
 }
 

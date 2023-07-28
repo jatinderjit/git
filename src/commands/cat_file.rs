@@ -1,5 +1,9 @@
+use std::path::PathBuf;
+
 use anyhow::Result;
 use clap::Args;
+
+use crate::objects::{object::Contents, ObjectFile};
 
 #[derive(Args, Debug)]
 pub(crate) struct CatFileCliOptions {
@@ -64,7 +68,18 @@ impl From<CatFileCliOptions> for CatFileOptions {
     }
 }
 
-pub(crate) fn cat_file(options: CatFileOptions) -> Result<()> {
-    dbg!(options);
+pub(crate) fn cat_file(git_dir: PathBuf, options: CatFileOptions) -> Result<()> {
+    let file = ObjectFile::from_hash(&git_dir, &options.object)?;
+    let object = file.parse()?;
+    match options.flag {
+        DisplayFlag::Exists => {}
+        DisplayFlag::Pretty => match object.contents {
+            Contents::Blob(blob) => print!("{}", blob.try_string()?),
+            Contents::Tree(tree) => println!("{tree}"),
+            Contents::Commit(commit) => print!("{commit}"),
+        },
+        DisplayFlag::Size => println!("{}", object.size),
+        DisplayFlag::Type => println!("{}", object.kind()),
+    }
     Ok(())
 }

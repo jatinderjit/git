@@ -14,3 +14,4 @@ categories = ["command-line-utilities"]
 anyhow = "1.0.72"
 clap = { version = "4.3.19", features = ["derive", "env", "unicode"] }
 flate2 = "1.0.26"
+sha1 = "0.10.5"

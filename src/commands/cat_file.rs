@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Args;
 
-use crate::objects::{object::Contents, ObjectFile};
+use crate::objects::{find_hash, object::Contents, ObjectFile};
 
 #[derive(Args, Debug)]
 pub(crate) struct CatFileCliOptions {
@@ -69,7 +69,8 @@ impl From<CatFileCliOptions> for CatFileOptions {
 }
 
 pub(crate) fn cat_file(git_dir: PathBuf, options: CatFileOptions) -> Result<()> {
-    let file = ObjectFile::from_hash(&git_dir, &options.object)?;
+    let hash = find_hash(&git_dir, &options.object)?;
+    let file = ObjectFile::new(&git_dir, &hash);
     let object = file.parse()?;
     match options.flag {
         DisplayFlag::Exists => {}

@@ -23,6 +23,7 @@ pub fn run() -> Result<()> {
     match cli {
         Cli::Init(options) => commands::init(options)?,
         Cli::CatFile(options) => commands::cat_file(git_dir, options.into())?,
+        Cli::HashObject(options) => commands::hash_object(git_dir, options)?,
     };
     Ok(())
 }

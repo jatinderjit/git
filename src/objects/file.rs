@@ -1,54 +1,68 @@
 use std::{
-    fs,
+    fs::{self, File},
+    io::Write,
     path::{Path, PathBuf},
-    str,
 };
 
-use super::object::Object;
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 
-pub(crate) struct ObjectFile {
-    fp: PathBuf,
+use super::object::Object;
+use crate::utils;
+
+pub(crate) struct ObjectFile<'a> {
+    git_dir: &'a Path,
+    hash: &'a str,
 }
 
-impl ObjectFile {
-    pub(crate) fn from_hash(git_dir: &Path, hash: &str) -> Result<Self> {
-        let hash = super::find_hash(git_dir, hash)?;
-        let dir = git_dir.join("objects").join(&hash[..2]);
-        if !dir.exists() || !dir.is_dir() {
-            bail!(
-                "No object found for hash {hash} at {}",
-                dir.to_string_lossy()
-            );
-        }
-        let prefix = &hash[2..];
-        let files =
-            fs::read_dir(&dir).map_err(|_| anyhow!("Error reading {}", dir.to_string_lossy()))?;
+impl<'a> ObjectFile<'a> {
+    pub(crate) fn new(git_dir: &'a Path, hash: &'a str) -> Self {
+        // TODO: better handling of hash. Currently it's assumed to be validated
+        // before this function is called.
+        Self { git_dir, hash }
+    }
 
-        let mut fp = None;
-        for file in files {
-            if let Ok(file) = file {
-                let path = file.path();
-                let file_name = path.file_name().map(|f| f.to_str());
-                if let Some(Some(file_name)) = file_name {
-                    if !file_name.starts_with(prefix) {
-                        continue;
-                    }
-                    if fp.is_some() {
-                        bail!("Ambiguous hash: {hash}");
-                    }
-                    fp = Some(path);
-                }
-            }
+    fn dir_path(&self) -> PathBuf {
+        self.git_dir.join("objects").join(&self.hash[..2])
+    }
+
+    fn file_path(&self) -> PathBuf {
+        self.dir_path().join(&self.hash[2..])
+    }
+
+    pub fn save(&self, object: &Object) -> Result<()> {
+        assert_eq!(self.hash, object.compute_hash());
+
+        let dir_path = self.dir_path();
+        let fp = self.file_path();
+
+        if !dir_path.exists() {
+            fs::create_dir(dir_path)?;
+        } else if !dir_path.is_dir() {
+            bail!("File already exists instead of directory: {:?}", dir_path);
         }
-        match fp {
-            Some(fp) => Ok(ObjectFile { fp }),
-            None => bail!("No object found for hash {hash}"),
+
+        if Path::new(&fp).exists() {
+            // Remove it since the read only permissions on the object files
+            // won't allow us to overwrite it.
+            fs::remove_file(&fp)?;
         }
+
+        let body = utils::zlib_encode(&object.raw)?;
+        {
+            let mut f = File::create(&fp)?;
+            f.write_all(&body)?;
+        }
+
+        let mut perms = fs::metadata(&fp)?.permissions();
+        perms.set_readonly(true);
+        fs::set_permissions(&fp, perms)?;
+
+        Ok(())
     }
 
     pub(crate) fn parse(&self) -> Result<Object> {
-        let body = fs::read(&self.fp)?;
+        let body = fs::read(self.file_path())?;
+        let body = utils::zlib_decode(&body)?;
         Object::parse(&body)
     }
 }

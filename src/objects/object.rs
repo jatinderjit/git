@@ -1,7 +1,7 @@
 use anyhow::{anyhow, bail, Error, Result};
+use sha1::{Digest, Sha1};
 use std::{
     fmt::{self, Display},
-    io::Read,
     str::{self, FromStr, Utf8Error},
 };
 use ObjectKind::*;
@@ -49,6 +49,7 @@ impl<'a> TryFrom<&'a [u8]> for ObjectKind {
 }
 
 pub struct Object {
+    pub raw: Vec<u8>,
     pub size: usize,
     pub contents: Contents,
 }
@@ -157,16 +158,21 @@ impl Display for TreeRowItem {
 }
 
 impl Object {
-    fn decode(bytes: &[u8]) -> Result<Vec<u8>> {
-        use flate2::read::ZlibDecoder;
-        let mut z = ZlibDecoder::new(bytes);
-        let mut buffer = Vec::new();
-        z.read_to_end(&mut buffer)?;
-        Ok(buffer)
+    pub fn new_blob(contents: &[u8]) -> Result<Self> {
+        let mut body = Vec::new();
+        body.extend(b"blob ");
+        body.extend(contents.len().to_string().as_bytes());
+        body.push(0);
+        body.extend(contents);
+        Ok(Self {
+            raw: body,
+            size: contents.len(),
+            contents: Contents::Blob(BlobContents(contents.to_vec())),
+        })
     }
 
     pub fn parse(body: &[u8]) -> Result<Self> {
-        let body = Self::decode(body)?;
+        let raw = body.to_vec();
 
         let space = body
             .iter()
@@ -188,6 +194,7 @@ impl Object {
             bail!("Corrupt hash (Invalid size: {})", size);
         }
         Ok(Object {
+            raw,
             size,
             contents: Contents::parse(kind, &body[content_start..])?,
         })
@@ -200,5 +207,12 @@ impl Object {
             Tree(_) => ObjectKind::Tree,
             Commit(_) => ObjectKind::Commit,
         }
+    }
+
+    pub fn compute_hash(&self) -> String {
+        let mut hasher = Sha1::new();
+        hasher.update(&self.raw);
+        let hash = hasher.finalize().to_vec();
+        super::hash::hex_digest(&hash)
     }
 }

@@ -1,4 +1,8 @@
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+
+use anyhow::Result;
+use flate2::{read::ZlibDecoder, write::ZlibEncoder, Compression};
 
 /// Checks if the path is the path is a git repository root
 fn is_repo_root(path: &Path) -> bool {
@@ -22,4 +26,19 @@ pub(crate) fn find_repo_root(path: PathBuf) -> Option<PathBuf> {
         root = path.parent();
     }
     None
+}
+
+pub fn zlib_decode(bytes: &[u8]) -> Result<Vec<u8>> {
+    let mut d = ZlibDecoder::new(bytes);
+    let mut buffer = Vec::new();
+    d.read_to_end(&mut buffer)?;
+    Ok(buffer)
+}
+
+pub fn zlib_encode(bytes: &[u8]) -> Result<Vec<u8>> {
+    let mut buffer = Vec::new();
+    let mut e = ZlibEncoder::new(&mut buffer, Compression::best());
+    e.write_all(bytes)?;
+    e.finish()?;
+    Ok(buffer)
 }

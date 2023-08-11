@@ -24,6 +24,7 @@ pub fn run() -> Result<()> {
         Cli::Init(options) => commands::init(options)?,
         Cli::CatFile(options) => commands::cat_file(git_dir, options.into())?,
         Cli::HashObject(options) => commands::hash_object(git_dir, options)?,
+        Cli::LsTree(options) => commands::ls_tree(git_dir, options)?,
     };
     Ok(())
 }

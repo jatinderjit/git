@@ -7,7 +7,10 @@ use std::{
 use anyhow::{bail, Result};
 
 use super::object::Object;
-use crate::utils;
+use crate::{
+    objects::{blob::BlobContents, object::Contents},
+    utils,
+};
 
 pub(crate) struct ObjectFile<'a> {
     git_dir: &'a Path,
@@ -47,7 +50,11 @@ impl<'a> ObjectFile<'a> {
             fs::remove_file(&fp)?;
         }
 
-        let body = utils::zlib_encode(&object.raw)?;
+        let body = match &object.contents {
+            Contents::Blob(BlobContents(blob)) => blob,
+            _ => todo!(),
+        };
+        let body = utils::zlib_encode(body)?;
         {
             let mut f = File::create(&fp)?;
             f.write_all(&body)?;

@@ -17,7 +17,7 @@ pub(crate) struct HashObjectOptions {
 
 pub(crate) fn hash_object(git_dir: PathBuf, options: HashObjectOptions) -> Result<()> {
     let contents = fs::read(options.path)?;
-    let object = Object::new_blob(&contents)?;
+    let object = Object::new_blob(&contents);
     let hash = object.compute_hash();
     if options.write {
         let object_file = ObjectFile::new(&git_dir, &hash);

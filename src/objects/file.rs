@@ -1,42 +1,35 @@
 use std::{
     fs::{self, File},
     io::Write,
-    path::{Path, PathBuf},
+    path::Path,
 };
 
 use anyhow::{bail, Result};
 
 use super::object::Object;
 use crate::{
+    context::Context,
     objects::{blob::BlobContents, object::Contents},
     utils,
 };
 
 pub(crate) struct ObjectFile<'a> {
-    git_dir: &'a Path,
+    context: &'a Context,
     hash: &'a str,
 }
 
 impl<'a> ObjectFile<'a> {
-    pub(crate) fn new(git_dir: &'a Path, hash: &'a str) -> Self {
+    pub(crate) fn new(context: &'a Context, hash: &'a str) -> Self {
         // TODO: better handling of hash. Currently it's assumed to be validated
         // before this function is called.
-        Self { git_dir, hash }
-    }
-
-    fn dir_path(&self) -> PathBuf {
-        self.git_dir.join("objects").join(&self.hash[..2])
-    }
-
-    fn file_path(&self) -> PathBuf {
-        self.dir_path().join(&self.hash[2..])
+        Self { context, hash }
     }
 
     pub fn save(&self, object: &Object) -> Result<()> {
         assert_eq!(self.hash, object.compute_hash());
 
-        let dir_path = self.dir_path();
-        let fp = self.file_path();
+        let dir_path = self.context.object_dir(&self.hash);
+        let fp = self.context.object_path(&self.hash);
 
         if !dir_path.exists() {
             fs::create_dir(dir_path)?;
@@ -68,7 +61,7 @@ impl<'a> ObjectFile<'a> {
     }
 
     pub(crate) fn parse(&self) -> Result<Object> {
-        let body = fs::read(self.file_path())?;
+        let body = fs::read(self.context.object_path(self.hash))?;
         let body = utils::zlib_decode(&body)?;
         Object::parse(&body)
     }

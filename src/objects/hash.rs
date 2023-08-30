@@ -1,13 +1,15 @@
 use anyhow::{anyhow, bail, Result};
-use std::{fs, path::Path};
+use std::fs;
+
+use crate::context::Context;
 
 /// Finds the full object hash for the hash prefix.
-pub fn find_hash(git_dir: &Path, hash: &str) -> Result<String> {
+pub fn find_hash(context: &Context, hash: &str) -> Result<String> {
     if hash.len() < 4 || hash.len() > 40 {
         bail!("Invalid hash length");
     }
 
-    let dir = git_dir.join("objects").join(&hash[..2]);
+    let dir = context.git_dir.join("objects").join(&hash[..2]);
     if !dir.exists() || !dir.is_dir() {
         bail!("No object found for hash: {hash}");
     }

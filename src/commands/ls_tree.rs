@@ -1,9 +1,10 @@
-use std::path::PathBuf;
-
 use anyhow::Result;
 use clap::Args;
 
-use crate::objects::{find_hash, object::Contents, ObjectFile};
+use crate::{
+    context::Context,
+    objects::{find_hash, object::Contents, ObjectFile},
+};
 
 #[derive(Args, Debug)]
 pub(crate) struct LsTreeOptions {
@@ -14,9 +15,9 @@ pub(crate) struct LsTreeOptions {
     object: String,
 }
 
-pub(crate) fn ls_tree(git_dir: PathBuf, options: LsTreeOptions) -> Result<()> {
-    let hash = find_hash(&git_dir, &options.object)?;
-    let file = ObjectFile::new(&git_dir, &hash);
+pub(crate) fn ls_tree(context: Context, options: LsTreeOptions) -> Result<()> {
+    let hash = find_hash(&context, &options.object)?;
+    let file = ObjectFile::new(&context, &hash);
     let object = file.parse()?;
     match object.contents {
         Contents::Blob(_) => eprintln!("fatal: not a tree object"),
@@ -36,7 +37,7 @@ pub(crate) fn ls_tree(git_dir: PathBuf, options: LsTreeOptions) -> Result<()> {
                 name_only: options.name_only,
                 object: commit.tree,
             };
-            return ls_tree(git_dir, options);
+            return ls_tree(context, options);
         }
     };
     Ok(())

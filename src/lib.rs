@@ -1,9 +1,11 @@
+mod context;
 mod utils;
 
-use std::{env, path::PathBuf};
+use std::env;
 
 use anyhow::{anyhow, Ok, Result};
 use cli::Cli;
+use context::Context;
 use utils::find_repo_root;
 
 pub(crate) mod cli;
@@ -12,19 +14,22 @@ pub(crate) mod objects;
 
 pub fn run() -> Result<()> {
     let cli = cli::parse();
-    let git_dir = match cli {
-        Cli::Init(_) => PathBuf::new(),
+    let context = match cli {
+        Cli::Init(_) => Context::new(env::current_dir()?),
         _ => {
             let cwd = env::current_dir()?;
             let root = find_repo_root(cwd).ok_or(anyhow!("not a git repository"))?;
-            root.join(".git")
+            Context::new(root)
         }
     };
     match cli {
         Cli::Init(options) => commands::init(options)?,
-        Cli::CatFile(options) => commands::cat_file(git_dir, options.into())?,
-        Cli::HashObject(options) => commands::hash_object(git_dir, options)?,
-        Cli::LsTree(options) => commands::ls_tree(git_dir, options)?,
+        Cli::CatFile(options) => commands::cat_file(&context, options.into())?,
+        Cli::HashObject(options) => {
+            let hash = commands::hash_object(&context, options)?;
+            println!("{hash}");
+        }
+        Cli::LsTree(options) => commands::ls_tree(context, options)?,
     };
     Ok(())
 }

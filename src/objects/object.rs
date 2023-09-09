@@ -11,6 +11,8 @@ pub(crate) struct Object {
     pub(crate) contents: Contents,
 }
 
+// TODO: The size diff is too large. Should we use Box?
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum Contents {
     Blob(BlobContents),
     Tree(TreeContents),

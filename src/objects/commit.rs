@@ -60,7 +60,7 @@ impl CommitContents {
                 let mut ends = false;
                 let err = lines
                     .map(|line| {
-                        if !line.starts_with(" ") {
+                        if !line.starts_with(' ') {
                             return Some("Unexpected lines");
                         }
                         gpgsig.push('\n');
@@ -123,7 +123,7 @@ impl Author {
             .split_once("> ")
             .ok_or(anyhow!("Invalid author format"))?;
         let (timestamp, timezone) = remaining
-            .split_once(" ")
+            .split_once(' ')
             .ok_or(anyhow!("Invalid author format"))?;
         let timestamp = timestamp
             .parse::<u32>()
@@ -131,7 +131,7 @@ impl Author {
         let parsed_timezone: i32 = timezone
             .parse()
             .map_err(|_| anyhow!("Invalid author format (timezone)"))?;
-        if parsed_timezone >= 2400 || parsed_timezone < -2400 {
+        if !(-2400..2400).contains(&parsed_timezone) {
             bail!("Invalid author format (timezone)");
         }
         Ok(Self {

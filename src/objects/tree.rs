@@ -62,7 +62,7 @@ impl TreeRowItem {
     fn new(perms: &str, hash: String, name: &str) -> Self {
         let perms = format!("{:0>6}", perms);
         Self {
-            kind: if perms.starts_with("1") {
+            kind: if perms.starts_with('1') {
                 ObjectKind::Blob
             } else {
                 ObjectKind::Tree

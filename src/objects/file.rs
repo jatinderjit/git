@@ -28,8 +28,8 @@ impl<'a> ObjectFile<'a> {
     pub fn save(&self, object: &Object) -> Result<()> {
         assert_eq!(self.hash, object.compute_hash());
 
-        let dir_path = self.context.object_dir(&self.hash);
-        let fp = self.context.object_path(&self.hash);
+        let dir_path = self.context.object_dir(self.hash);
+        let fp = self.context.object_path(self.hash);
 
         if !dir_path.exists() {
             fs::create_dir(dir_path)?;

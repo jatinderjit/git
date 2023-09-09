@@ -20,19 +20,17 @@ pub fn find_hash(context: &Context, hash: &str) -> Result<String> {
     let mut full_hash = None;
     let prefix = &hash[2..];
     let files = fs::read_dir(&dir).map_err(|_| anyhow!("Error reading {}", dir.display()))?;
-    for file in files {
-        if let Ok(file) = file {
-            let path = file.path();
-            let file_name = path.file_name().map(|f| f.to_str());
-            if let Some(Some(file_name)) = file_name {
-                if !file_name.starts_with(prefix) {
-                    continue;
-                }
-                if full_hash.is_some() {
-                    bail!("Ambiguous hash: {hash}");
-                }
-                full_hash = Some(format!("{}{}", &hash[..2], file_name));
+    for file in files.flatten() {
+        let path = file.path();
+        let file_name = path.file_name().map(|f| f.to_str());
+        if let Some(Some(file_name)) = file_name {
+            if !file_name.starts_with(prefix) {
+                continue;
             }
+            if full_hash.is_some() {
+                bail!("Ambiguous hash: {hash}");
+            }
+            full_hash = Some(format!("{}{}", &hash[..2], file_name));
         }
     }
     full_hash.ok_or(anyhow!("No object found for hash: {hash}"))
@@ -43,13 +41,12 @@ pub(crate) fn hex_digest(bytes: &[u8]) -> String {
     let chars = b"0123456789abcdef";
     bytes
         .iter()
-        .map(|c| {
+        .flat_map(|c| {
             vec![
                 chars[(c >> 4) as usize] as char,
                 chars[(c & 0x0F) as usize] as char,
             ]
         })
-        .flatten()
         .map(|c| c.to_string())
         .collect::<Vec<_>>()
         .join("")

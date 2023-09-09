@@ -23,16 +23,13 @@ impl Context {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::commands::{self, InitOptions};
-    use std::cell::RefCell;
-    use std::sync::Mutex;
-    use std::{env, fs};
+    use tempfile::TempDir;
 
     use super::Context;
-
-    static COUNT: Mutex<RefCell<u32>> = Mutex::new(RefCell::new(0));
+    use crate::commands::{self, InitOptions};
 
     pub struct TestContext {
+        _temp_dir: TempDir,
         pub context: Context,
     }
 
@@ -40,18 +37,12 @@ pub(crate) mod tests {
         /// Creates a new temporary directory and sets it as the current working directory.
         /// This directory will be deleted when the value is dropped.
         pub fn no_init() -> Self {
-            let guard = COUNT.lock().unwrap();
-            *guard.borrow_mut() += 1;
-            let value = *guard.borrow();
-
-            // TODO: use an actual random dir
-            let dir_name = format!("hpj5vkiu8ftxkrak-{}", value);
-            let repo_root = env::temp_dir().join(dir_name);
-
-            assert!(!repo_root.exists(), "Path already exists: {:?}", repo_root);
-            fs::create_dir(&repo_root).unwrap();
-            let context = Context::new(repo_root);
-            Self { context }
+            let temp_dir = TempDir::new().unwrap();
+            let context = Context::new(temp_dir.path().to_path_buf());
+            Self {
+                _temp_dir: temp_dir,
+                context,
+            }
         }
 
         pub fn init() -> Self {
@@ -62,12 +53,6 @@ pub(crate) mod tests {
             };
             commands::init::init(options).unwrap();
             context
-        }
-    }
-
-    impl Drop for TestContext {
-        fn drop(&mut self) {
-            fs::remove_dir_all(&self.context.repo_root).unwrap();
         }
     }
 }
